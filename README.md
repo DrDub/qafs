@@ -29,10 +29,16 @@ it that allow changing:
 
 ## Installation
 
-QAFS requires the python-fuse library to be installed:
+QAFS requires the fusepy library to be installed:
 
 ```bash
-pip install fuse-python
+pip install fusepy
+```
+
+Or on Debian-based systems:
+
+```bash
+apt-get install python3-fusepy
 ```
 
 ## Usage
@@ -42,21 +48,33 @@ pip install fuse-python
 Mount the filesystem with a storage directory for JSON files:
 
 ```bash
-python3 qafs.py /mount/point -o storage=/path/to/storage
+python3 qafs.py /mount/point -s /path/to/storage
 ```
 
-### Background Mounting
+### Mounting Options
 
-To run in the background (daemon mode):
+To run in the background (daemon mode - default):
 
 ```bash
-python3 qafs.py /mount/point -o storage=/path/to/storage
+python3 qafs.py /mount/point -s /path/to/storage
 ```
 
 To run in foreground for debugging:
 
 ```bash
-python3 qafs.py /mount/point -o storage=/path/to/storage -f
+python3 qafs.py /mount/point -s /path/to/storage -f
+```
+
+To enable logging to storage/log.txt:
+
+```bash
+python3 qafs.py /mount/point -s /path/to/storage -l
+```
+
+To enable debug mode:
+
+```bash
+python3 qafs.py /mount/point -s /path/to/storage -d
 ```
 
 ### Creating Folders and Files
@@ -173,6 +191,34 @@ reproducible random data on-the-fly, allowing large file sizes without disk stor
 fusermount -u /mount/point
 ```
 
+## Supported Filesystem Operations
+
+QAFS implements comprehensive filesystem operations for realistic testing:
+
+### File Operations
+- **Creating files**: Use `touch`, `echo >`, or any standard file creation method
+- **Reading files**: Content is generated on-the-fly using reproducible random data
+- **Writing files**: Updates file metadata and size (content is not stored)
+- **Deleting files**: Use `rm` to remove files
+- **Truncating files**: Use `truncate` or file open with truncation flags
+- **Renaming/moving files**: Use `mv` to rename or move files within the same root folder
+
+### Directory Operations
+- **Creating directories**: Use `mkdir` to create folders at any nesting level
+- **Removing directories**: Use `rmdir` to remove empty directories
+- **Listing directories**: Use `ls` to list directory contents
+
+### Metadata Operations
+- **Changing permissions**: Use `chmod` to modify file/directory permissions
+- **Changing ownership**: Use `chown` to change uid/gid
+- **Updating timestamps**: Use `touch` to update access and modification times
+
+### Special Behaviors
+- **rmdir**: Automatically checks if directory is empty before deletion; removes JSON file for root-level folders in persistent mode
+- **rename/mv**: Only supports operations within the same root folder (cross-root moves return an error)
+- **chmod/chown**: Updates the change time (ctime) when metadata changes
+- All filesystem operations respect persistent mode - changes are saved to JSON only when enabled
+
 ## Testing Use Cases
 
 QAFS is designed for testing file synchronization systems. You can:
@@ -184,4 +230,6 @@ QAFS is designed for testing file synchronization systems. You can:
 5. Use Internet Archive `*_files.xml` metadata to quickly create realistic test datasets with multiple files
 6. Simulate large files without consuming disk space (using content_seed)
 7. Test file synchronization with Internet Archive items containing hundreds of files
+8. Test file operations (rename, chmod, chown, delete) on complex directory trees
+9. Test synchronization behavior with permission and ownership changes
 
